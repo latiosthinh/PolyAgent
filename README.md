@@ -25,7 +25,7 @@ npx poly-agent init
    ```
 
 2. **Choose your AI IDE**:
-   - **Cursor** → Installs to `./.cursors/commands/`
+   - **Cursor** → Installs to `./.cursor/commands/`
    - **ClaudeCode** → Installs to `./.claude/skills/`
    - **Antigravity** → Installs to `./.agents/workflows/`
 
@@ -51,7 +51,7 @@ npx poly-agent init
 
 Depending on your chosen IDE, prompts are installed to:
 
-- **Cursor**: `./.cursors/commands/`
+- **Cursor**: `./.cursor/commands/`
 - **ClaudeCode**: `./.claude/skills/`
 - **Antigravity**: `./.agents/workflows/`
 

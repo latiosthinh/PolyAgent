@@ -41,7 +41,7 @@ async function getPromptsDir(): Promise<string> {
 
 // Map IDE to target directory
 const IDE_DIRECTORIES: Record<string, string> = {
-    'Cursor': '.cursors/commands',
+    'Cursor': '.cursor/commands',
     'ClaudeCode': '.claude/skills',
     'Antigravity': '.agents/workflows'
 };
