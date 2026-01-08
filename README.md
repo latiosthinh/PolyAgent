@@ -1,47 +1,69 @@
-# PolyAgent (MCP Server)
+# PolyAgent
 
-A "Headless" Multi-Agent system that exposes expert personas as Tools to your IDE.
+A CLI installer for AI IDE prompts - easily install commands, skills, and workflows for Cursor, ClaudeCode, and Antigravity.
 
 ## Features
-- **Prompt-as-Code**: Agents are defined in `prompts/*.md`.
-- **Dynamic Context**: Agents can read local state (like `git status`) to be smarter.
-- **MCP Standard**: Works with Cursor, Claude Desktop, and Antigravity.
+
+- **Interactive CLI**: Beautiful command-line interface using clack prompts
+- **Multi-IDE Support**: Works with Cursor, ClaudeCode, and Antigravity
+- **Selective Installation**: Choose which prompts to install
+- **Prompt-as-Code**: All prompts are defined in Markdown files with frontmatter
 
 ## Installation
 
-1.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-2.  **Build**:
-    ```bash
-    npm run build
-    ```
-    (Note: ensure you have `tsc` available or use `npx tsc`)
+Install and run the CLI installer:
 
-## Configuration (Claude Desktop / IDE)
-
-Add this to your MCP settings file (e.g., `claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "polyagent": {
-      "command": "node",
-      "args": ["/absolute/path/to/d:/Project/agents/dist/index.js"]
-    }
-  }
-}
+```bash
+npx poly-agent init
 ```
 
-## Adding New Agents
-Simply create a new Markdown file in `prompts/`.
-Example `prompts/python-guru.md`:
+## Usage
 
-```markdown
-# Role
-You are a Python Expert.
-...
+1. **Run the installer**:
+   ```bash
+   npx poly-agent init
+   ```
+
+2. **Choose your AI IDE**:
+   - **Cursor** → Installs to `./.cursors/commands/`
+   - **ClaudeCode** → Installs to `./.claude/skills/`
+   - **Antigravity** → Installs to `./.agents/workflows/`
+
+3. **Select prompts**: Navigate through the list of available prompts, press `Space` to select/unselect, and `Enter` to continue.
+
+4. **Installation**: The selected prompts will be copied to the appropriate directory for your chosen IDE.
+
+## Available Prompts
+
+- **Senior QA Automation** - Expert in Playwright, Vitest, Jest, and testing strategies
+- **Researcher** - Deep information gathering and synthesis
+- **UI/UX Designer** - Expert in user interface and experience design
+- **Fullstack Engineer** - Full-stack development expertise
+- **Git Manager** - Git workflow and repository management
+- **MCP Manager** - Model Context Protocol management
+- **Project Manager** - Project planning and management
+- **Brainstormer** - Creative problem solving and ideation
+- **Code Reviewer** - Code review and quality assurance
+- **Debugger** - Debugging and troubleshooting expertise
+- **Docs Manager** - Documentation creation and management
+
+## Target Directories
+
+Depending on your chosen IDE, prompts are installed to:
+
+- **Cursor**: `./.cursors/commands/`
+- **ClaudeCode**: `./.claude/skills/`
+- **Antigravity**: `./.agents/workflows/`
+
+## Development
+
+To build the project locally:
+
+```bash
+npm install
+npm run build
 ```
 
-Restart the server (or reload window) to see the new tool `consult_python_guru`.
+## License
+
+ISC

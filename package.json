@@ -1,15 +1,35 @@
 {
-  "name": "agents",
+  "name": "poly-agent",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "CLI installer for AI IDE prompts - install commands, skills, and workflows for Cursor, ClaudeCode, and Antigravity",
+  "main": "dist/index.js",
+  "bin": {
+    "poly-agent": "./dist/cli.js"
+  },
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "cursor",
+    "claude",
+    "antigravity",
+    "ai-ide",
+    "prompts",
+    "commands",
+    "skills",
+    "workflows"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
+  "files": [
+    "dist",
+    "prompts"
+  ],
+  "dependencies": {
+    "@clack/prompts": "^0.8.2"
+  },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "ts-node": "^10.9.2",
