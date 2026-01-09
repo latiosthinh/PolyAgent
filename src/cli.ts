@@ -46,7 +46,7 @@ const IDE_DIRECTORIES: Record<string, string> = {
     'Claude': '.claude/skills',
 };
 
-async function main() {
+async function runInit() {
     // Welcome message
     intro('Welcome to PolyAgent CLI');
 
@@ -159,7 +159,67 @@ async function main() {
     }
 }
 
+function showHelp() {
+    console.log(`
+PolyAgent CLI - Install AI IDE prompts
+
+Usage:
+  poly-agent init          Initialize and install prompts
+  poly-agent --help        Show this help message
+  poly-agent --version     Show version
+
+Examples:
+  npx poly-agent init      Install prompts for your AI IDE
+`);
+}
+
+function showVersion() {
+    try {
+        // Try to get version from installed package first
+        const packagePath = require.resolve('poly-agent/package.json');
+        const packageJson = require(packagePath);
+        console.log(`poly-agent v${packageJson.version}`);
+    } catch {
+        try {
+            // Fallback to local package.json for development
+            const packageJson = require('../package.json');
+            console.log(`poly-agent v${packageJson.version}`);
+        } catch {
+            console.log('poly-agent (version unknown)');
+        }
+    }
+}
+
+async function main() {
+    const args = process.argv.slice(2);
+    const command = args[0];
+
+    switch (command) {
+        case 'init':
+            await runInit();
+            break;
+        case '--help':
+        case '-h':
+        case 'help':
+            showHelp();
+            break;
+        case '--version':
+        case '-v':
+        case 'version':
+            showVersion();
+            break;
+        case undefined:
+            // No command provided, default to init for backward compatibility
+            await runInit();
+            break;
+        default:
+            log.error(`Unknown command: ${command}`);
+            showHelp();
+            process.exit(1);
+    }
+}
+
 main().catch((error) => {
-    log.error(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
 });
