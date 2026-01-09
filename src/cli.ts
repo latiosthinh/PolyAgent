@@ -42,8 +42,8 @@ async function getPromptsDir(): Promise<string> {
 // Map IDE to target directory
 const IDE_DIRECTORIES: Record<string, string> = {
     'Cursor': '.cursor/commands',
-    'ClaudeCode': '.claude/skills',
-    'Antigravity': '.agents/workflows'
+    'Antigravity': '.agent/workflows',
+    'Claude': '.claude/skills',
 };
 
 async function main() {
@@ -55,7 +55,7 @@ async function main() {
         message: 'Choose the AI IDE you want to use:',
         options: [
             { value: 'Cursor', label: 'Cursor' },
-            { value: 'ClaudeCode', label: 'ClaudeCode' },
+            { value: 'Claude', label: 'Claude' },
             { value: 'Antigravity', label: 'Antigravity' }
         ]
     });
@@ -119,9 +119,25 @@ async function main() {
         // Copy each selected prompt file
         const copyPromises = (selectedPrompts as string[]).map(async (filename) => {
             const sourcePath = path.join(promptsDir, filename);
-            const targetPath = path.join(fullTargetPath, filename);
-            await fs.copyFile(sourcePath, targetPath);
-            return filename;
+            
+            if (selectedIDE === 'Claude') {
+                // For Claude, create a folder with the prompt name and SKILL.md inside
+                const promptName = path.basename(filename, '.md');
+                const skillFolderPath = path.join(fullTargetPath, promptName);
+                const skillFilePath = path.join(skillFolderPath, 'SKILL.md');
+                
+                // Create the skill folder
+                await fs.mkdir(skillFolderPath, { recursive: true });
+                
+                // Copy the content to SKILL.md
+                await fs.copyFile(sourcePath, skillFilePath);
+                return `${promptName}/SKILL.md`;
+            } else {
+                // For other IDEs, copy directly
+                const targetPath = path.join(fullTargetPath, filename);
+                await fs.copyFile(sourcePath, targetPath);
+                return filename;
+            }
         });
 
         const copiedFiles = await Promise.all(copyPromises);
