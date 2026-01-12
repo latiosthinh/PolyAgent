@@ -7,11 +7,73 @@ export interface AgentPrompt {
     content: string;
 }
 
+interface SharedInstruction {
+    name: string;
+    content: string;
+}
+
 export class PromptLoader {
     private promptsDir: string;
+    private sharedInstructionsCache: SharedInstruction[] | null = null;
 
     constructor(promptsDir: string) {
         this.promptsDir = promptsDir;
+    }
+
+    /**
+     * Load all shared instructions from the _shared directory.
+     * These will be appended to every prompt.
+     */
+    async loadSharedInstructions(): Promise<SharedInstruction[]> {
+        // Return cached instructions if available
+        if (this.sharedInstructionsCache !== null) {
+            return this.sharedInstructionsCache;
+        }
+
+        const sharedDir = path.join(this.promptsDir, '_shared');
+        const instructions: SharedInstruction[] = [];
+
+        try {
+            const files = await fs.readdir(sharedDir);
+            const mdFiles = files.filter(f => f.endsWith('.md'));
+
+            for (const file of mdFiles) {
+                const filePath = path.join(sharedDir, file);
+                const fileContent = await fs.readFile(filePath, 'utf-8');
+
+                // Parse frontmatter to get name, extract content
+                const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+                const match = fileContent.match(frontmatterRegex);
+
+                if (match) {
+                    const metadata = this.parseFrontmatter(match[1]);
+                    instructions.push({
+                        name: metadata.name || path.basename(file, '.md'),
+                        content: match[2].trim()
+                    });
+                } else {
+                    // No frontmatter, use entire content
+                    instructions.push({
+                        name: path.basename(file, '.md'),
+                        content: fileContent.trim()
+                    });
+                }
+            }
+        } catch (error) {
+            // _shared directory doesn't exist or is empty - that's okay
+            // Return empty array, shared instructions are optional
+        }
+
+        this.sharedInstructionsCache = instructions;
+        return instructions;
+    }
+
+    /**
+     * Clear the shared instructions cache.
+     * Useful if shared instructions are modified at runtime.
+     */
+    clearCache(): void {
+        this.sharedInstructionsCache = null;
     }
 
     async loadPrompt(filename: string, variables: Record<string, string> = {}): Promise<AgentPrompt> {
@@ -24,25 +86,37 @@ export class PromptLoader {
             const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
             const match = fileContent.match(frontmatterRegex);
 
+            let name: string;
+            let description: string;
+            let content: string;
+
             if (!match) {
                 // Fallback if no frontmatter
-                return {
-                    name: path.basename(filename, '.md'),
-                    description: 'No description provided.',
-                    content: this.injectVariables(fileContent, variables)
-                };
+                name = path.basename(filename, '.md');
+                description = 'No description provided.';
+                content = fileContent;
+            } else {
+                const rawFrontmatter = match[1];
+                const metadata = this.parseFrontmatter(rawFrontmatter);
+
+                name = metadata.name || path.basename(filename, '.md');
+                description = metadata.description || '';
+                content = match[2];
             }
 
-            const rawFrontmatter = match[1];
-            const content = match[2];
+            // Inject variables
+            content = this.injectVariables(content, variables);
 
-            const metadata = this.parseFrontmatter(rawFrontmatter);
+            // Append shared instructions
+            const sharedInstructions = await this.loadSharedInstructions();
+            if (sharedInstructions.length > 0) {
+                const sharedContent = sharedInstructions
+                    .map(inst => `\n---\n\n${inst.content}`)
+                    .join('\n');
+                content = content + sharedContent;
+            }
 
-            return {
-                name: metadata.name || path.basename(filename, '.md'),
-                description: metadata.description || '',
-                content: this.injectVariables(content, variables)
-            };
+            return { name, description, content };
 
         } catch (error) {
             throw new Error(`Failed to load prompt ${filename}: ${error}`);
@@ -74,7 +148,8 @@ export class PromptLoader {
     async listPrompts(): Promise<string[]> {
         try {
             const files = await fs.readdir(this.promptsDir);
-            return files.filter(f => f.endsWith('.md'));
+            // Filter out _shared directory and only return .md files
+            return files.filter(f => f.endsWith('.md') && !f.startsWith('_'));
         } catch (error) {
             return [];
         }

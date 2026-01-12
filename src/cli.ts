@@ -105,7 +105,7 @@ async function runInit() {
         process.exit(0);
     }
 
-    // Step 4: Copy files
+    // Step 4: Install prompts with shared instructions
     const targetDir = IDE_DIRECTORIES[selectedIDE as string];
     const fullTargetPath = path.join(process.cwd(), targetDir);
 
@@ -116,9 +116,17 @@ async function runInit() {
         // Create target directory if it doesn't exist
         await fs.mkdir(fullTargetPath, { recursive: true });
 
-        // Copy each selected prompt file
-        const copyPromises = (selectedPrompts as string[]).map(async (filename) => {
-            const sourcePath = path.join(promptsDir, filename);
+        // Install each selected prompt with shared instructions injected
+        const installPromises = (selectedPrompts as string[]).map(async (filename) => {
+            // Load prompt with shared instructions injected
+            const prompt = await loader.loadPrompt(filename);
+            
+            // Reconstruct the full file content with frontmatter
+            const fullContent = `---
+name: ${prompt.name}
+description: ${prompt.description}
+---
+${prompt.content}`;
             
             if (selectedIDE === 'Claude') {
                 // For Claude, create a folder with the prompt name and SKILL.md inside
@@ -129,24 +137,24 @@ async function runInit() {
                 // Create the skill folder
                 await fs.mkdir(skillFolderPath, { recursive: true });
                 
-                // Copy the content to SKILL.md
-                await fs.copyFile(sourcePath, skillFilePath);
+                // Write the processed content to SKILL.md
+                await fs.writeFile(skillFilePath, fullContent, 'utf-8');
                 return `${promptName}/SKILL.md`;
             } else {
-                // For other IDEs, copy directly
+                // For other IDEs, write directly
                 const targetPath = path.join(fullTargetPath, filename);
-                await fs.copyFile(sourcePath, targetPath);
+                await fs.writeFile(targetPath, fullContent, 'utf-8');
                 return filename;
             }
         });
 
-        const copiedFiles = await Promise.all(copyPromises);
-        s.stop(`✓ Installed ${copiedFiles.length} prompt(s) successfully`);
+        const installedFiles = await Promise.all(installPromises);
+        s.stop(`✓ Installed ${installedFiles.length} prompt(s) successfully`);
 
         // Success message
         log.success(`Prompts installed to: ${targetDir}`);
         log.info(`Installed files:`);
-        copiedFiles.forEach(file => {
+        installedFiles.forEach(file => {
             log.info(`  - ${file}`);
         });
 
