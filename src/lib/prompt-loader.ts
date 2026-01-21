@@ -108,6 +108,8 @@ export class PromptLoader {
             content = this.injectVariables(content, variables);
 
             // Append shared instructions
+            // logic moved to CLI for global installation
+            /*
             const sharedInstructions = await this.loadSharedInstructions();
             if (sharedInstructions.length > 0) {
                 const sharedContent = sharedInstructions
@@ -115,6 +117,7 @@ export class PromptLoader {
                     .join('\n');
                 content = content + sharedContent;
             }
+            */
 
             return { name, description, content };
 

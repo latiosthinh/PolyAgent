@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-import { intro, select, multiselect, spinner, log, outro, cancel, isCancel } from '@clack/prompts';
+import { intro, select, multiselect, spinner, log, outro, cancel, isCancel, confirm } from '@clack/prompts';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { PromptLoader } from './lib/prompt-loader.js';
 import { createRequire } from 'module';
 
@@ -15,7 +16,7 @@ async function getPromptsDir(): Promise<string> {
         path.join(process.cwd(), 'prompts'), // Local development
         path.join(process.cwd(), 'node_modules', 'poly-agent', 'prompts'), // Installed package
     ];
-    
+
     // Try to resolve via require if available
     try {
         const packagePath = require.resolve('poly-agent/package.json');
@@ -24,7 +25,7 @@ async function getPromptsDir(): Promise<string> {
     } catch {
         // Not installed as package, continue
     }
-    
+
     // Check which path actually exists
     for (const promptsPath of possiblePaths) {
         try {
@@ -34,7 +35,7 @@ async function getPromptsDir(): Promise<string> {
             continue;
         }
     }
-    
+
     // Fallback to first option
     return possiblePaths[0];
 }
@@ -45,6 +46,19 @@ const IDE_DIRECTORIES: Record<string, string> = {
     'Antigravity': '.agent/workflows',
     'Claude': '.claude/skills',
 };
+
+const IDE_GLOBAL_CONFIG_DIR: Record<string, string> = {
+    'Cursor': '.cursor',
+    'Antigravity': '.antigravity',
+    'Claude': '.claude',
+};
+
+function getGlobalRulesPath(ide: string): string {
+    const homeDir = os.homedir();
+    const configDir = IDE_GLOBAL_CONFIG_DIR[ide] || `.${ide.toLowerCase()}`;
+    // Assuming 'rules' directory for all pending further customization
+    return path.join(homeDir, configDir, 'rules');
+}
 
 async function runInit() {
     // Welcome message
@@ -120,23 +134,23 @@ async function runInit() {
         const installPromises = (selectedPrompts as string[]).map(async (filename) => {
             // Load prompt with shared instructions injected
             const prompt = await loader.loadPrompt(filename);
-            
+
             // Reconstruct the full file content with frontmatter
             const fullContent = `---
 name: ${prompt.name}
 description: ${prompt.description}
 ---
 ${prompt.content}`;
-            
+
             if (selectedIDE === 'Claude') {
                 // For Claude, create a folder with the prompt name and SKILL.md inside
                 const promptName = path.basename(filename, '.md');
                 const skillFolderPath = path.join(fullTargetPath, promptName);
                 const skillFilePath = path.join(skillFolderPath, 'SKILL.md');
-                
+
                 // Create the skill folder
                 await fs.mkdir(skillFolderPath, { recursive: true });
-                
+
                 // Write the processed content to SKILL.md
                 await fs.writeFile(skillFilePath, fullContent, 'utf-8');
                 return `${promptName}/SKILL.md`;
@@ -165,6 +179,47 @@ ${prompt.content}`;
         log.error(`Failed to install prompts: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
     }
+
+    // Step 5: Ask if user wants global context rule
+    const wantsContextRule = await confirm({
+        message: 'Install global context-rule for automatic context management?',
+        initialValue: true
+    });
+
+    if (isCancel(wantsContextRule)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+    }
+
+    if (wantsContextRule) {
+        const globalRuleS = spinner();
+        const globalRulePath = getGlobalRulesPath(selectedIDE as string);
+        globalRuleS.start(`Installing global context rule to ${globalRulePath}...`);
+
+        try {
+            await fs.mkdir(globalRulePath, { recursive: true });
+
+            // Load shared instructions to find context-hook
+            // UPDATED: Copy context-rule.md directly from _shared
+            const contextRulePath = path.join(promptsDir, '_shared', 'context-rule.md');
+
+            try {
+                const contextRuleContent = await fs.readFile(contextRulePath, 'utf-8');
+                await fs.writeFile(path.join(globalRulePath, 'context-rule.md'), contextRuleContent, 'utf-8');
+                globalRuleS.stop('✓ Global context rule installed successfully');
+                log.info(`  - ${path.join(globalRulePath, 'context-rule.md')}`);
+            } catch (readError) {
+                globalRuleS.stop('! Context rule file not found in _shared but installation continued');
+            }
+
+        } catch (error) {
+            globalRuleS.stop('✗ Global rule installation failed');
+            log.error(`Failed to install global rule: ${error instanceof Error ? error.message : String(error)}`);
+            // Don't exit process, as local prompts might have been installed successfully
+        }
+    }
+
+    outro('Installation complete! 🎉');
 }
 
 function showHelp() {
