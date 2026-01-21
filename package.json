@@ -1,6 +1,6 @@
 {
   "name": "poly-agent",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "CLI installer for AI IDE prompts - install commands, skills, and workflows for Cursor, ClaudeCode, and Antigravity",
   "main": "dist/index.js",
   "bin": {
