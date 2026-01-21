@@ -96,8 +96,8 @@ export class PromptLoader {
                 description = 'No description provided.';
                 content = fileContent;
             } else {
-                const rawFrontmatter = match[1];
-                const metadata = this.parseFrontmatter(rawFrontmatter);
+            const rawFrontmatter = match[1];
+            const metadata = this.parseFrontmatter(rawFrontmatter);
 
                 name = metadata.name || path.basename(filename, '.md');
                 description = metadata.description || '';

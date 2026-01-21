@@ -82,3 +82,22 @@ status: [in-progress | completed | blocked | paused]
 5. You edit `src/routes/login.ts`
 6. You update `.context/feature-api-auth.md` again
 7. Continue until task complete, then set status to `completed`
+
+## Recalling Context
+
+When a user asks to recall or resume a context (e.g., "recall feature-auth", "continue from context X", "load context"):
+
+1. **Read ONLY the specified context file** from `.context/` - Do NOT scan the entire project
+2. **Trust the context file** - It contains all the information you need
+3. **Summarize the current state** - What was done, what remains
+4. **Confirm understanding** with the user before proceeding
+5. **Only read files listed in "Files Changed"** if you need to check current state
+6. **Continue updating** the same context file as you work
+
+**IMPORTANT**: When recalling context, do NOT:
+- Search or scan the entire codebase
+- Read files not mentioned in the context
+- Run broad exploratory searches
+- Assume information beyond what's in the context file
+
+If asked to **list contexts**, read the `.context/` directory and show available files with their status.
